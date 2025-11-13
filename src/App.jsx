@@ -7,7 +7,7 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/kuesioner-siswa-smkn10-semarang" element={<HomePage />} />
         <Route path="/questionnaire/:id" element={<Questionnaire />} />
         <Route path="/results" element={<Results />} />
       </Routes>
