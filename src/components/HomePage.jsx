@@ -28,10 +28,10 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-900 via-blue-800 to-blue-900 relative">
+    <div className="min-h-screen flex flex-col bg-linear-to-br from-blue-900 via-blue-800 to-blue-900 relative">
       <WaveAnimation />
       <Navbar />
-      <div className="flex items-center justify-center min-h-[calc(100vh-80px)] p-4 relative z-10">
+      <div className="flex-1 flex items-center justify-center p-4 relative z-10">
         <Card className="w-full max-w-lg shadow-2xl border-0">
           <div className="text-center mb-6">
             <Title level={1} className="text-blue-900 mb-2">Selamat Datang!</Title>
