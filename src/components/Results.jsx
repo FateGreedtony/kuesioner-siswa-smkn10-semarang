@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography, List, Button, Tag, Divider } from 'antd';
-import { UserOutlined, TeamOutlined, TrophyOutlined, BulbOutlined } from '@ant-design/icons';
+import { Card, Typography, List, Button, Tag, Divider, Modal, Collapse } from 'antd';
+import { UserOutlined, TeamOutlined, TrophyOutlined, BulbOutlined, FileTextOutlined, LinkOutlined } from '@ant-design/icons';
 import { questions } from '../question/index.js';
 import Navbar from './Navbar';
 
@@ -17,17 +17,48 @@ const recommendations = {
   'Naturalis': 'Kinestetik'
 };
 
+const learningStyleDescriptions = {
+  'Kinestetik': {
+    description: 'Gaya belajar kinestetik adalah gaya belajar dengan cara bergerak, bekerja, dan menyentuh. Pembelajar kinestetik lebih suka belajar melalui praktek langsung, eksperimen, dan aktivitas fisik.',
+    tips: [
+      'Belajar sambil bergerak atau berjalan',
+      'Menggunakan model atau alat peraga',
+      'Melakukan eksperimen dan praktek langsung',
+      'Membuat proyek atau simulasi'
+    ]
+  },
+  'Audio': {
+    description: 'Gaya belajar audio adalah gaya belajar dengan cara mendengar. Pembelajar audio lebih mudah menyerap informasi melalui suara, musik, diskusi, dan penjelasan lisan.',
+    tips: [
+      'Mendengarkan rekaman atau podcast',
+      'Berdiskusi dengan teman atau guru',
+      'Membaca dengan suara keras',
+      'Menggunakan musik sebagai latar belajar'
+    ]
+  },
+  'Audio-visual': {
+    description: 'Gaya belajar audio-visual menggabungkan pendengaran dan penglihatan. Pembelajar ini efektif belajar melalui video, presentasi, diagram yang dijelaskan, dan demonstrasi visual dengan narasi.',
+    tips: [
+      'Menonton video pembelajaran',
+      'Menggunakan diagram dan grafik dengan penjelasan',
+      'Mengikuti presentasi multimedia',
+      'Membuat mind map berwarna dengan catatan audio'
+    ]
+  }
+};
+
 const getCompetence = (score) => {
-  if (score >= 9) return 'Sangat Kompeten';
-  if (score >= 7) return 'Kompeten';
-  if (score >= 5) return 'Cukup Kompeten';
-  return 'Tidak Kompeten';
+  if (score >= 9) return 'Sangat Sesuai';
+  if (score >= 7) return 'Sesuai';
+  if (score >= 5) return 'Cukup Sesuai';
+  return 'Tidak Sesuai';
 };
 
 export default function Results() {
   const [results, setResults] = useState([]);
   const [studentClass, setStudentClass] = useState('');
   const [studentName, setStudentName] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     const answers = JSON.parse(localStorage.getItem('answers') || '{}');
@@ -37,12 +68,11 @@ export default function Results() {
     setStudentName(name);
 
     const res = questions.map((intel, index) => {
-      // Gunakan key unik yang sama dengan format di Questionnaire
       const total = intel.data.reduce((sum, q) => {
         const uniqueKey = `${index + 1}-${q.id}`;
         return sum + (answers[uniqueKey] || 0);
       }, 0);
-      const score = total / 5; // 10 questions / 5
+      const score = total / 5;
       return {
         name: intel.name,
         score: score.toFixed(1),
@@ -56,19 +86,66 @@ export default function Results() {
   const competentResults = results.filter(r => r.competence !== 'Tidak Kompeten');
 
   const handleReset = () => {
-    // Hapus semua data dari localStorage
     localStorage.removeItem('answers');
     localStorage.removeItem('studentClass');
     localStorage.removeItem('studentName');
-    // Redirect ke halaman utama
     window.location.href = '/';
   };
 
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+  };
+
+  const getTopCompetencies = () => {
+    const competentResults = results.filter(r => parseFloat(r.score) >= 7);
+    if (competentResults.length > 0) {
+      return competentResults;
+    }
+    const maxScore = Math.max(...results.map(r => parseFloat(r.score)));
+    return results.filter(r => parseFloat(r.score) === maxScore);
+  };
+
+  const topCompetencies = getTopCompetencies();
+  const uniqueLearningStyles = [...new Set(topCompetencies.map(r => r.recommendation))];
+
+  const learningStyleItems = uniqueLearningStyles.map(style => ({
+    key: style,
+    label: <Text strong className="text-lg">{style}</Text>,
+    children: (
+      <div className="space-y-3">
+        <Paragraph className="text-gray-700">
+          {learningStyleDescriptions[style].description}
+        </Paragraph>
+        <div>
+          <Text strong className="text-blue-900">Tips Belajar:</Text>
+          <ul className="mt-2 ml-4 space-y-1">
+            {learningStyleDescriptions[style].tips.map((tip, idx) => (
+              <li key={idx} className="text-gray-700">{tip}</li>
+            ))}
+          </ul>
+        </div>
+        <div className="pt-2">
+          <Text strong className="text-blue-900">
+            <LinkOutlined className="mr-2" />
+            Sumber Belajar:
+          </Text>
+          <div className="mt-2 text-gray-500 italic">
+            To be added yaak
+          </div>
+        </div>
+      </div>
+    )
+  }));
+
   const getCompetenceColor = (competence) => {
     switch(competence) {
-      case 'Sangat Kompeten': return 'green';
-      case 'Kompeten': return 'blue';
-      case 'Cukup Kompeten': return 'orange';
+      case 'Sangat Sesuai': return 'green';
+      case 'Sesuai': return 'blue';
+      case 'Cukup Sesuai': return 'orange';
       default: return 'red';
     }
   };
@@ -127,10 +204,6 @@ export default function Results() {
                           {item.competence}
                         </Tag>
                       </div>
-                      <div>
-                        <Text className="text-gray-600">Rekomendasi: </Text>
-                        <Tag color="blue">{item.recommendation}</Tag>
-                      </div>
                     </div>
                   </Card>
                 </List.Item>
@@ -138,33 +211,81 @@ export default function Results() {
             />
           </Card>
 
-          {competentResults.length > 0 && (
-            <Card className="mb-6 border-0 shadow-lg bg-linear-to-r from-blue-900 to-blue-800 text-white">
-              <Title level={4} className="text-white mb-4">
-                <BulbOutlined className="mr-2" />Rekomendasi Gaya Belajar Utama
-              </Title>
-              <Paragraph className="text-white text-lg mb-3">
-                Berdasarkan hasil analisis, gaya belajar yang sesuai untuk Anda:
-              </Paragraph>
-              <div className="flex flex-wrap gap-3">
-                {[...new Set(competentResults.map(r => r.recommendation))].map(rec => (
-                  <Tag key={rec} color="white" className="text-blue-900 text-lg px-4 py-2 font-semibold">
-                    {rec}
-                  </Tag>
-                ))}
-              </div>
-            </Card>
-          )}
+          <div className="flex gap-4">
+            <Button 
+              type="default"
+              size="large" 
+              className="flex-1 border-blue-900 text-blue-900 hover:bg-blue-50 h-12 text-lg font-semibold" 
+              onClick={showModal}
+              icon={<FileTextOutlined />}
+            >
+              Lihat Kesimpulan
+            </Button>
+            <Button 
+              type="primary" 
+              size="large" 
+              className="flex-1 bg-blue-900 hover:bg-blue-800 border-0 h-12 text-lg font-semibold" 
+              onClick={handleReset}
+            >
+              Mulai Lagi
+            </Button>
+          </div>
 
-          <Button 
-            type="primary" 
-            size="large" 
-            block 
-            className="bg-blue-900 hover:bg-blue-800 border-0 h-12 text-lg font-semibold" 
-            onClick={handleReset}
+          <Modal
+            title={
+              <Title level={3} className="text-blue-900 mb-0">
+                <BulbOutlined className="mr-2" />
+                Kesimpulan & Rekomendasi Belajar
+              </Title>
+            }
+            open={isModalOpen}
+            onCancel={handleModalClose}
+            footer={[
+              <Button key="close" type="primary" onClick={handleModalClose} className="bg-blue-900">
+                Tutup
+              </Button>
+            ]}
+            width={700}
           >
-            Mulai Lagi
-          </Button>
+            <Divider />
+            <div className="space-y-4">
+              <div>
+                <Title level={5} className="text-blue-900">
+                  🎯 Kompetensi Unggulan Anda:
+                </Title>
+                <List
+                  dataSource={topCompetencies}
+                  renderItem={item => (
+                    <List.Item className="border-0 py-2">
+                      <div className="w-full">
+                        <Text strong className="text-base">{item.name}</Text>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Text className="text-gray-600">Skor: </Text>
+                          <Text strong className="text-lg text-blue-900">{item.score}</Text>
+                          <Tag color={getCompetenceColor(item.competence)} className="ml-2">
+                            {item.competence}
+                          </Tag>
+                        </div>
+                      </div>
+                    </List.Item>
+                  )}
+                />
+              </div>
+
+              <Divider />
+
+              <div>
+                <Title level={5} className="text-blue-900 mb-3">
+                  📚 Gaya Belajar yang Cocok untuk Anda:
+                </Title>
+                <Collapse 
+                  items={learningStyleItems}
+                  accordion
+                  className="bg-blue-50"
+                />
+              </div>
+            </div>
+          </Modal>
         </div>
       </div>
     </div>
